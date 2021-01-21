@@ -23,9 +23,11 @@
 
 using namespace vex;
 
+//positiont tracking
 int xPos = 0;
 int yPos = 0;
-int yawValue = 0;
+
+//debug variables
 int yG = 0;
 int xG = 0;
 int xposG = 0;
@@ -35,6 +37,8 @@ int debugY = 0;
 
 bool moving = false;
 
+
+//Change these to put in waypoints for the robot
 const int positions[5][2] = 
 {
   {0, 3100},
@@ -64,18 +68,15 @@ void display() {
     Brain.Screen.print("Next X Position: %d", xG);
 
     Brain.Screen.setCursor(6, 1);
-    Brain.Screen.print("Yaw Value: %d", yawValue);
-
-    Brain.Screen.setCursor(7, 1);
     Brain.Screen.print("X Position: %d", xposG);
 
-    Brain.Screen.setCursor(8, 1);
+    Brain.Screen.setCursor(7, 1);
     Brain.Screen.print("Y Position: %d", yposG);
 
-    Brain.Screen.setCursor(9, 1);
+    Brain.Screen.setCursor(8, 1);
     Brain.Screen.print("X math value: %d", debugX);
 
-    Brain.Screen.setCursor(10, 1);
+    Brain.Screen.setCursor(9, 1);
     Brain.Screen.print("Y math value: %d", debugY);
 
     wait(15, msec);
@@ -114,6 +115,34 @@ float distanceXY(int x, int y, int x2, int y2) {
   return sqrt(dx*dx + dy*dy);
 }
 
+
+//For ramping up and ramping down
+float calculateSpeed(float distanceToFinish, float endGoal) {
+  float rampUpK = .1;
+  float rampDownK = .1;
+
+  float halfWay = endGoal / 2;
+
+  float perc = 0;
+
+  if(distanceToFinish < halfWay){
+    //ramp up
+    float left = endGoal - distanceToFinish;
+    perc = endGoal / left+1;
+    perc *= perc;
+    perc *= rampUpK;
+  }
+  else {
+    //ramp down
+    perc = endGoal / distanceToFinish+1;
+    perc *= perc;
+    perc *= rampDownK;
+  }
+
+  return perc;
+}
+
+
 void moveTo(int posIndex, float speed) {
   //resetting the encoders
   vertencoder.setPosition(0, degrees);
@@ -149,19 +178,20 @@ void moveTo(int posIndex, float speed) {
     xValue /= length;
     yValue /= length;
     
-    //applying those values to the motors
+    //Calculating motor speeds
     double frontLeft = (double)((yValue + xValue));
     double backLeft = (double)((yValue - xValue));
     double frontRight = (double)((yValue - xValue));
     double backRight = (double)((yValue + xValue));
 
-    if(distanceXY(currentX, currentY, x, y) <= 500) {
-      speed = originalSpeed / 4;
-    }
-    else {
-      speed = originalSpeed;
-    }
+    //calculating the ramp up and down speeds
+    float currentProgress = distanceXY(currentX, currentY, startPosX, startPosY);
+    float totalProgress = distanceXY(startPosX, startPosY, x, y);
 
+    speed = originalSpeed;
+    speed *= calculateSpeed(currentProgress, totalProgress);
+
+    //applying motor speeds to motors and spinning
     leftfront.setVelocity(frontLeft * speed, vex::velocityUnits::pct);
     leftback.setVelocity(backLeft * speed, vex::velocityUnits::pct);
     rightfront.setVelocity(frontRight * speed, vex::velocityUnits::pct);
@@ -199,17 +229,20 @@ void rightinertialturn(double goaldegrees)
     wait(.3, seconds);
   }
 
-  leftfront.setVelocity(20, vex::velocityUnits::pct);
-  leftback.setVelocity(20, vex::velocityUnits::pct);
-  rightfront.setVelocity(20, vex::velocityUnits::pct);
-  rightback.setVelocity(20, vex::velocityUnits::pct);
-  
   while(inertia.rotation(degrees) < goaldegrees)
   {
+    float speed = calculateSpeed(inertia.rotation(degrees), goaldegrees);
+    speed *= 40;
+
+    leftfront.setVelocity(speed, vex::velocityUnits::pct);
+    leftback.setVelocity(speed, vex::velocityUnits::pct);
+    rightfront.setVelocity(-speed, vex::velocityUnits::pct);
+    rightback.setVelocity(-speed, vex::velocityUnits::pct);
+  
     leftfront.spin(forward);
     leftback.spin(forward);
-    rightfront.spin(reverse);
-    rightback.spin(reverse);
+    rightfront.spin(forward);
+    rightback.spin(forward);
   }
 
 
@@ -232,15 +265,18 @@ void leftinertialturn(double goaldegrees)
     wait(.3, seconds);
   }
 
-  leftfront.setVelocity(20, vex::velocityUnits::pct);
-  leftback.setVelocity(20, vex::velocityUnits::pct);
-  rightfront.setVelocity(20, vex::velocityUnits::pct);
-  rightback.setVelocity(20, vex::velocityUnits::pct);
-
   while(inertia.rotation(degrees) > goaldegrees)
   {
-    leftfront.spin(reverse);
-    leftback.spin(reverse);
+    float speed = calculateSpeed(-inertia.rotation(degrees), -goaldegrees);
+    speed *= 40;
+
+    leftfront.setVelocity(-speed, vex::velocityUnits::pct);
+    leftback.setVelocity(-speed, vex::velocityUnits::pct);
+    rightfront.setVelocity(speed, vex::velocityUnits::pct);
+    rightback.setVelocity(speed, vex::velocityUnits::pct);
+  
+    leftfront.spin(forward);
+    leftback.spin(forward);
     rightfront.spin(forward);
     rightback.spin(forward);
   }
@@ -261,16 +297,17 @@ int main() {
   initRotations();
   thread t(display);
 
+  //example path
   wait(3, seconds);
-  moveTo(0 ,50);
+  moveTo(0 ,90);
   wait(.5, seconds);
   rightinertialturn(90);
   wait(.5, seconds);
-  moveTo(1, 40);
+  moveTo(1, 60);
   wait(.5, seconds);
-  moveTo(2, 40);
+  moveTo(2, 60);
   wait(.5, seconds);
-  moveTo(3, 50);
+  moveTo(3, 60);
   wait(.5, seconds);
-  moveTo(4, 30);
+  moveTo(4, 40);
 }
