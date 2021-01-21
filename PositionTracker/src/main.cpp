@@ -48,8 +48,9 @@ const int positions[5][2] =
   {0, 0}
 };
 
-int rotatedPoints[5][2];
+int rotatedPoints[5][2]; //keeps track of the points once the robot has to make a rotation
 
+//For debugging the different variables
 void display() {
   while(true) {
     Brain.Screen.setCursor(1, 1);
@@ -85,20 +86,23 @@ void display() {
   }
 }
 
+//Iterates though every index in the rotatedPoints array and rotates the point by the amount that the robot is turning
 void rotate(int degree, int cx, int cy) {
   int arraySize = sizeof(rotatedPoints) / sizeof(rotatedPoints[0]);
 
-  double degrees = ((degree) * (3.145926/180));
+  double degrees = ((degree) * (3.145926/180)); //converting the degrees into radians so that sin and cos works
 
   for(int i=0; i<arraySize; i++) {
-      int x = positions[i][0];
-      int y = positions[i][1];
+      int x = rotatedPoints[i][0];
+      int y = rotatedPoints[i][1];
 
+      //rotating the point in the array around the current x y position of the robot (Math found online)
       rotatedPoints[i][0] = round(cos(degrees) * (x - cx) - sin(degrees) * (y - cy) + cx);
       rotatedPoints[i][1] = round(sin(degrees) * (x - cx) + cos(degrees) * (y - cy) + cy);
     }
 }
 
+//copies all of the x y positions from the positions array to the rotatedPoints array so that the user doesn't have to do that manually
 void initRotations() {
   int arraySize = sizeof(positions) / sizeof(positions[0]);
 
@@ -108,6 +112,7 @@ void initRotations() {
   }
 }
 
+//method to quickly calculate distance between two points
 float distanceXY(int x, int y, int x2, int y2) {
   float dx = x - x2;
   float dy = y - y2;
@@ -143,42 +148,47 @@ float calculateSpeed(float distanceToFinish, float endGoal) {
 }
 
 
+//Move to: takes in a point index number and a speed value and travels to that point based off of its current x y position
 void moveTo(int posIndex, float speed) {
   //resetting the encoders
   vertencoder.setPosition(0, degrees);
   strafeencoder.setPosition(0, degrees);
 
+  //getting the points that the user wanted
   int x = rotatedPoints[posIndex][0];
   int y = rotatedPoints[posIndex][1];
 
   xG = x;
   yG = y;
 
-  moving = true;
+  moving = true; //for debugging... not really useful in any way. Feel free to delete
   
-  //calculating motor speeds and direction
+  //Remembering where the robot started for calculations
   int startPosX = xPos;
   int startPosY = yPos;
 
-  float originalSpeed = speed;
+  float originalSpeed = speed; //saving the original speed so that the robot can manipulate it's speed without going too fast or too slow
 
-  int currentX = xPos;
+  //storing the x y positions in new variables so that the code doesn't use the main variables
+  int currentX = xPos; 
   int currentY = yPos;
 
+  //moving until the distance between the x and y points are less than 7. This value can be lowered, but the robot might overshoot and wobble a bit. It can also be raised, but the robot will stop moving further from the point but with less chance of wobbling
   while(!(abs(x-currentX) < 7 && abs(y-currentY) < 7)) {
+    //Creating a 2D vector for the robot to travel on to get the assigned point
     double xValue = (x - currentX);
     double yValue = (y - currentY);
 
     debugX = x;
     debugY = y;
 
-    //Normalizing the vector
+    //Normalizing the vector so that the code can have full control over the robot's speed 
     float length = sqrt(xValue * xValue + yValue * yValue);
 
     xValue /= length;
     yValue /= length;
     
-    //Calculating motor speeds
+    //Creating the motor speeds. (replacing x and y controller input with xValue and yValue since the mimic controller input)
     double frontLeft = (double)((yValue + xValue));
     double backLeft = (double)((yValue - xValue));
     double frontRight = (double)((yValue - xValue));
@@ -202,33 +212,40 @@ void moveTo(int posIndex, float speed) {
     rightfront.spin(forward);
     rightback.spin(forward);
 
+    //updating the positions so that the robot knows how far away it is from the assigned point
     currentX = vertencoder.position(degrees) + startPosX;
     currentY = strafeencoder.position(degrees) + startPosY;
 
+    //debug global variables
     xposG = xPos;
     yposG = yPos;
   }
 
+  //setting the x y position of the robot to the points it just traveled to
   xPos = rotatedPoints[posIndex][0];
   yPos = rotatedPoints[posIndex][1];
 
+  //more debug global variables
   xposG = xPos;
   yposG = yPos;
 
+  //stopping the motors
   leftfront.stop();
   leftback.stop();
   rightfront.stop();
   rightback.stop();
-  moving = false;
+  moving = false; //for debugging
 }
 
 void rightinertialturn(double goaldegrees)
 {
+  //recallibrating the inertial senser
   inertia.calibrate();
   while (inertia.isCalibrating()) {
     wait(.3, seconds);
   }
 
+  //using the calculateSpeed method to ramp up and down the turn speed
   while(inertia.rotation(degrees) < goaldegrees)
   {
     float speed = calculateSpeed(inertia.rotation(degrees), goaldegrees);
@@ -245,8 +262,7 @@ void rightinertialturn(double goaldegrees)
     rightback.spin(forward);
   }
 
-
-  rotate(goaldegrees, xPos, yPos);
+  rotate(goaldegrees, xPos, yPos); //position tracking
 
   leftfront.stop();
   leftback.stop();
@@ -260,11 +276,13 @@ void leftinertialturn(double goaldegrees)
 {
   goaldegrees *= -1;
 
+  //recallibrating the inertial senser
   inertia.calibrate();
   while (inertia.isCalibrating()) {
     wait(.3, seconds);
   }
 
+  //using the calculateSpeed method to ramp up and down the turn speed
   while(inertia.rotation(degrees) > goaldegrees)
   {
     float speed = calculateSpeed(-inertia.rotation(degrees), -goaldegrees);
