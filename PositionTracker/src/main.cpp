@@ -173,8 +173,8 @@ void moveTo(int posIndex, float speed) {
   int currentX = xPos; 
   int currentY = yPos;
 
-  //moving until the distance between the x and y points are less than 7. This value can be lowered, but the robot might overshoot and wobble a bit. It can also be raised, but the robot will stop moving further from the point but with less chance of wobbling
-  while(!(abs(x-currentX) < 7 && abs(y-currentY) < 7)) {
+  //moving until the distance between the x and y points are less than 10 plus the speed divided by 10. This value can be lowered, but the robot might overshoot and wobble a bit. It can also be raised, but the robot will stop moving further from the point but with less chance of wobbling
+  while(!(abs(x-currentX) < 10 + (speed/10) && abs(y-currentY) < 10 + (speed/10))) {
     //Creating a 2D vector for the robot to travel on to get the assigned point
     double xValue = (x - currentX);
     double yValue = (y - currentY);
