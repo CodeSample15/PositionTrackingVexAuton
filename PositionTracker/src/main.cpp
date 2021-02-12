@@ -112,7 +112,7 @@ void initRotations() {
   }
 }
 
-//method to quickly calculate distance between two points
+//method for easily calculating distance between two points
 float distanceXY(int x, int y, int x2, int y2) {
   float dx = x - x2;
   float dy = y - y2;
@@ -174,8 +174,8 @@ void moveTo(int posIndex, float speed) {
   int currentY = yPos;
 
   //moving until the distance between the x and y points are less than 10 plus the speed divided by 10. This value can be lowered, but the robot might overshoot and wobble a bit. It can also be raised, but the robot will stop moving further from the point but with less chance of wobbling
-  while(!(abs(x-currentX) < 10 + (speed/10) && abs(y-currentY) < 10 + (speed/10))) {
-    //Creating a 2D vector for the robot to travel on to get the assigned point
+  while(!(abs(x-currentX) < 10 + (originalSpeed/10) && abs(y-currentY) < 10 + (originalSpeed/10))) {
+    //Creating a 2D vector for the robot to travel on to get to the assigned point
     double xValue = (x - currentX);
     double yValue = (y - currentY);
 
@@ -188,7 +188,7 @@ void moveTo(int posIndex, float speed) {
     xValue /= length;
     yValue /= length;
     
-    //Creating the motor speeds. (replacing x and y controller input with xValue and yValue since the mimic controller input)
+    //Creating the motor speeds. (replacing x and y controller input with xValue and yValue since they mimic controller input)
     double frontLeft = (double)((yValue + xValue));
     double backLeft = (double)((yValue - xValue));
     double frontRight = (double)((yValue - xValue));
@@ -216,7 +216,7 @@ void moveTo(int posIndex, float speed) {
     currentX = vertencoder.position(degrees) + startPosX;
     currentY = strafeencoder.position(degrees) + startPosY;
 
-    //debug global variables
+    //for debugging
     xposG = xPos;
     yposG = yPos;
   }
@@ -225,7 +225,7 @@ void moveTo(int posIndex, float speed) {
   xPos = rotatedPoints[posIndex][0];
   yPos = rotatedPoints[posIndex][1];
 
-  //more debug global variables
+  //updatting the debugging variables one last time
   xposG = xPos;
   yposG = yPos;
 
@@ -313,7 +313,7 @@ int main() {
   // Initializing Robot Configuration. DO NOT REMOVE!
   vexcodeInit();
   initRotations();
-  thread t(display);
+  thread t(display); //for printing the different debug values to the brain's screen
 
   //example path
   wait(3, seconds);
