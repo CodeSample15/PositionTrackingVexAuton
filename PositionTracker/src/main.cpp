@@ -149,7 +149,7 @@ float calculateSpeed(float distanceToFinish, float endGoal) {
 
 
 //Move to: takes in a point index number and a speed value and travels to that point based off of its current x y position
-void moveTo(int posIndex, float speed) {
+void moveTo(int posIndex, float speed, bool usePSpeed) {
   //resetting the encoders
   vertencoder.setPosition(0, degrees);
   strafeencoder.setPosition(0, degrees);
@@ -199,7 +199,8 @@ void moveTo(int posIndex, float speed) {
     float totalProgress = distanceXY(startPosX, startPosY, x, y);
 
     speed = originalSpeed;
-    speed *= calculateSpeed(currentProgress, totalProgress);
+    if(usePSpeed)
+      speed *= calculateSpeed(currentProgress, totalProgress);
 
     //applying motor speeds to motors and spinning
     leftfront.setVelocity(frontLeft * speed, vex::velocityUnits::pct);
@@ -317,15 +318,15 @@ int main() {
 
   //example path
   wait(3, seconds);
-  moveTo(0 ,90);
+  moveTo(0 ,90, true);
   wait(.5, seconds);
   rightinertialturn(90);
   wait(.5, seconds);
-  moveTo(1, 60);
+  moveTo(1, 60, true);
   wait(.5, seconds);
-  moveTo(2, 60);
+  moveTo(2, 60, true);
   wait(.5, seconds);
-  moveTo(3, 60);
+  moveTo(3, 60, true);
   wait(.5, seconds);
-  moveTo(4, 40);
+  moveTo(4, 40, true);
 }
