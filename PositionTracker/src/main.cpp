@@ -201,6 +201,14 @@ void moveTo(int posIndex, float speed, bool usePSpeed) {
     speed = originalSpeed;
     if(usePSpeed)
       speed *= calculateSpeed(currentProgress, totalProgress);
+    else{
+      if(distanceXY(xPos, yPos, x, y) <= 300) {
+        speed = originalSpeed / 4;
+      }
+      else {
+        speed = originalSpeed;
+      }
+    }
 
     //applying motor speeds to motors and spinning
     leftfront.setVelocity(frontLeft * speed, vex::velocityUnits::pct);
